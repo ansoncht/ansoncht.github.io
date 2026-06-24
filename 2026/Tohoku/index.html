@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2026年 東北之旅</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'PingFang HK', 'Hiragino Sans', 'Noto Sans HK', system-ui, sans-serif;
+      background: #f5f0eb;
+      color: #2c2c2c;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      flex-shrink: 0;
+    }
+
+    header .flag { font-size: 26px; }
+    header h1 { font-size: 20px; font-weight: 700; }
+    header .subtitle { font-size: 12px; color: #a0a0c0; margin-top: 2px; }
+
+    .car-badge {
+      margin-left: auto;
+      background: #e8364a;
+      color: #fff;
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 340px;
+      flex-shrink: 0;
+      background: #fff;
+      overflow-y: auto;
+      border-right: 1px solid #e0d8d0;
+    }
+
+    .sidebar-header {
+      padding: 13px 18px;
+      background: #f9f6f2;
+      border-bottom: 1px solid #e0d8d0;
+      font-size: 12px;
+      font-weight: 700;
+      color: #888;
+      letter-spacing: 0.5px;
+    }
+
+    .day-card {
+      border-bottom: 1px solid #f0ebe4;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .day-card:hover { background: #faf7f4; }
+
+    .day-card.active {
+      background: #fff5f5;
+      border-left: 3px solid #e8364a;
+    }
+
+    .day-card-inner { padding: 13px 18px 10px; }
+
+    .day-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .day-num {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #1a1a2e;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .day-card.active .day-num { background: #e8364a; }
+
+    .day-date { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+    .day-dow { font-size: 11px; color: #999; margin-top: 1px; }
+
+    .hotel-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #2c2c2c;
+      line-height: 1.45;
+      margin-bottom: 4px;
+    }
+
+    .hotel-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: #888;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+
+    .hotel-price { font-weight: 600; color: #555; }
+
+    .hotel-link {
+      color: #e8364a;
+      text-decoration: none;
+      font-size: 11px;
+    }
+    .hotel-link:hover { text-decoration: underline; }
+
+    .car-info {
+      background: #eef4ff;
+      border-radius: 6px;
+      padding: 7px 10px;
+      margin-top: 8px;
+      font-size: 11px;
+      color: #3a5a99;
+      line-height: 1.4;
+    }
+
+    /* Restaurant bookings */
+    .restaurant-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      background: #f0faf4;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-top: 8px;
+      border-left: 3px solid #16a34a;
+    }
+
+    .restaurant-emoji { font-size: 15px; flex-shrink: 0; }
+
+    .restaurant-info { flex: 1; min-width: 0; }
+
+    .restaurant-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #14532d;
+      line-height: 1.3;
+    }
+
+    .restaurant-sub {
+      font-size: 11px;
+      color: #16a34a;
+      margin-top: 1px;
+    }
+
+    .restaurant-time {
+      font-size: 11px;
+      color: #555;
+      margin-top: 2px;
+    }
+
+    .restaurant-link {
+      font-size: 11px;
+      color: #16a34a;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 2px;
+    }
+    .restaurant-link:hover { text-decoration: underline; }
+
+    /* Recommendations */
+    .recs-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #e8364a;
+      font-weight: 600;
+      padding: 8px 18px;
+      cursor: pointer;
+      border-top: 1px dashed #f0ebe4;
+      user-select: none;
+    }
+    .recs-toggle:hover { background: #fff5f5; }
+
+    .recs-list {
+      display: none;
+      padding: 4px 18px 12px;
+      background: #fdfaf8;
+    }
+    .recs-list.open { display: block; }
+
+    .rec-item {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      padding: 7px 0;
+      border-bottom: 1px solid #f5f0ea;
+    }
+    .rec-item:last-child { border-bottom: none; }
+
+    .rec-emoji { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+    .rec-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1a2e;
+      line-height: 1.35;
+    }
+
+    .rec-sub {
+      font-size: 11px;
+      color: #e8364a;
+      font-weight: 500;
+      margin-top: 1px;
+    }
+
+    .rec-desc {
+      font-size: 11px;
+      color: #666;
+      margin-top: 3px;
+      line-height: 1.5;
+    }
+
+    /* MAP */
+    #map { flex: 1; }
+
+    .leaflet-popup-content-wrapper {
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .leaflet-popup-content {
+      margin: 14px 16px;
+      min-width: 230px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .popup-day {
+      font-size: 11px;
+      color: #e8364a;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+
+    .popup-hotel-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 2px;
+      line-height: 1.3;
+    }
+
+    .popup-location { font-size: 11px; color: #888; margin-bottom: 2px; }
+    .popup-price { font-size: 12px; color: #555; font-weight: 600; margin-bottom: 8px; }
+
+    .popup-link {
+      display: inline-block;
+      background: #e8364a;
+      color: #fff;
+      border-radius: 5px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      margin-bottom: 10px;
+    }
+    .popup-link:hover { background: #c5203a; }
+
+    .popup-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #888;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      margin-top: 4px;
+      border-top: 1px solid #f0ebe4;
+      padding-top: 8px;
+    }
+
+    .popup-restaurant {
+      display: flex;
+      gap: 7px;
+      margin-bottom: 8px;
+      background: #f0faf4;
+      border-radius: 5px;
+      padding: 6px 8px;
+      border-left: 2px solid #16a34a;
+    }
+    .popup-restaurant-emoji { font-size: 13px; flex-shrink: 0; }
+    .popup-restaurant-name { font-size: 12px; font-weight: 700; color: #14532d; }
+    .popup-restaurant-sub { font-size: 11px; color: #16a34a; margin-top: 1px; }
+    .popup-restaurant-time { font-size: 11px; color: #555; margin-top: 1px; }
+
+    .popup-rec { display: flex; gap: 7px; margin-bottom: 8px; }
+    .popup-rec:last-child { margin-bottom: 0; }
+    .popup-rec-emoji { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+    .popup-rec-name { font-size: 12px; font-weight: 700; color: #1a1a2e; }
+    .popup-rec-sub { font-size: 11px; color: #e8364a; margin-top: 1px; }
+    .popup-rec-desc { font-size: 11px; color: #666; margin-top: 2px; line-height: 1.4; }
+
+    /* Legend */
+    .legend {
+      background: white;
+      padding: 10px 14px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      font-size: 12px;
+      line-height: 2;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+    .sidebar::-webkit-scrollbar { width: 5px; }
+    .sidebar::-webkit-scrollbar-track { background: #f5f0eb; }
+    .sidebar::-webkit-scrollbar-thumb { background: #d0c8c0; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="flag">🗾</span>
+  <div>
+    <h1>2026年 東北之旅</h1>
+    <div class="subtitle">2026年8月26日 – 9月7日　·　共12日</div>
+  </div>
+  <div class="car-badge">🚗 Times租車　8/28〜9/4</div>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-header">行程一覽 — 點擊日期可飛往地圖</div>
+    <div id="itinerary"></div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<script>
+const itinerary = [
+  {
+    date: "8月26日", dow: "星期三", day: 1,
+    hotel: "出發日",
+    location: null,
+    lat: null, lng: null, price: null, url: null, type: "transit",
+    restaurants: [],
+    recs: []
+  },
+  {
+    date: "8月27日", dow: "星期四", day: 2,
+    hotel: "ホテル八重の緑 東京",
+    location: "東京",
+    lat: 35.6896, lng: 139.6923,
+    price: "$181",
+    url: "https://yaenomidori.intokyohotels.com/en/",
+    type: "tokyo",
+    restaurants: [
+      {
+        emoji: "🍣",
+        name: "満天鮨",
+        sub: "Manten Sushi · 丸の内ブリックスクエアB1F",
+        time: "晚上 7:00",
+        url: "https://www.manten-sushi.com/"
+      }
+    ],
+    recs: [
+      { emoji: "⛩️", name: "明治神宮", sub: "Meiji Shrine", desc: "莊嚴神社，隱於蔥鬱森林之中。旁邊係代々木公園，非常適合清晨散步" },
+      { emoji: "🛍️", name: "原宿・竹下通り", sub: "Harajuku", desc: "繽紛時尚街道，購物後可去表參道享用咖啡同甜品" },
+      { emoji: "🌿", name: "新宿御苑", sub: "Shinjuku Gyoen", desc: "日本國家花園，8月底仍然綠意盎然，傍晚散步一流" },
+      { emoji: "🍢", name: "思い出横丁", sub: "回憶橫丁", desc: "新宿站旁嘅燒鳥小巷，夜晚氣氛非常地道，值得一試" },
+      { emoji: "🗼", name: "渋谷スクランブル交差点", sub: "涉谷十字路口", desc: "全世界最繁忙嘅行人十字路口，可以登上Scramble Square展望台俯瞰全景" }
+    ]
+  },
+  {
+    date: "8月28日", dow: "星期五", day: 3,
+    hotel: "湯けむりの宿 稲住温泉",
+    location: "秋田縣 東成瀨村",
+    lat: 39.1647, lng: 140.4950,
+    price: "¥100,400",
+    url: "https://dormy-hotels.com/resort/hotels/inazumi/",
+    carPickup: true,
+    type: "onsen",
+    restaurants: [],
+    recs: [
+      { emoji: "🪨", name: "抱返り渓谷", sub: "翡翠色溪谷", desc: "翡翠綠溪水、吊橋同瀑布，景色極靚。車程大約40分鐘" },
+      { emoji: "🏔️", name: "田沢湖", sub: "田澤湖", desc: "日本最深嘅湖，湖水呈鈷藍色，非常壯觀。車程約1小時" },
+      { emoji: "⚔️", name: "角館武家屋敷", sub: "角館武士宅邸", desc: "保存完好嘅武士古街，以垂枝櫻聞名。向北行車約1小時" },
+      { emoji: "♨️", name: "稲住温泉 露天風呂", sub: "露天溫泉浴池", desc: "旅館內有多個浴場，黃昏時分係露天風呂最靚嘅時候" }
+    ]
+  },
+  {
+    date: "8月29日", dow: "星期六", day: 4,
+    hotel: "コンフォートホテル北上",
+    location: "岩手縣 北上市",
+    lat: 39.2864, lng: 141.1133,
+    price: "$216",
+    url: "https://www.choice-hotels.jp/hotel/kitakami/",
+    type: "city",
+    restaurants: [],
+    recs: [
+      { emoji: "🌸", name: "展勝地公園", sub: "Tenshochi Park", desc: "北上川沿岸嘅大型公園，即使唔係櫻花季節都綠意盎然，非常舒適" },
+      { emoji: "⛵", name: "猊鼻渓", sub: "猊鼻渓谷遊船", desc: "石灰岩峭壁連綿嘅美景，坐船遊覽係一大特色。向南車程約1小時" },
+      { emoji: "🏛️", name: "平泉", sub: "世界文化遺產", desc: "擁有中尊寺金色堂嘅世界遺產，唐代佛教文化保存極好。向南約45分鐘" },
+      { emoji: "🚴", name: "北上川沿岸", sub: "河岸單車道", desc: "沿住流經市中心嘅河川，悠閒踩單車或散步都幾舒服" }
+    ]
+  },
+  {
+    date: "8月30日", dow: "星期日", day: 5,
+    hotel: "ダイワロイネットホテル盛岡駅前",
+    location: "岩手縣 盛岡市",
+    lat: 39.7003, lng: 141.1536,
+    price: "$108",
+    url: "https://www.daiwaroynet.jp/en/morioka-ekimae/",
+    type: "city",
+    restaurants: [],
+    recs: [
+      { emoji: "🍜", name: "わんこそば", sub: "Wanko Soba", desc: "盛岡名物！服務員不停幫你添碗蕎麥麵，一係叫停一係繼續，係一個非常有趣嘅體驗" },
+      { emoji: "🏯", name: "盛岡城跡公園", sub: "盛岡城遺址公園", desc: "保留古代石牆嘅山丘公園，可以俯瞰整個盛岡市" },
+      { emoji: "🏦", name: "岩手銀行赤レンガ館", sub: "紅磚銀行大樓", desc: "1911年建成嘅歐式紅磚建築，係市內最具歷史感嘅地標" },
+      { emoji: "🐄", name: "小岩井農場", sub: "小岩井農場", desc: "岩手山麓嘅廣闊牧場，乳製品非常出名好食。車程約30分鐘" },
+      { emoji: "🏮", name: "材木町・紺屋町", sub: "舊市街", desc: "工藝品店、和菓子舖林立嘅舊街道，慢慢行逛最舒服" }
+    ]
+  },
+  {
+    date: "8月31日", dow: "星期一", day: 6,
+    hotel: "乳頭温泉郷 妙乃湯",
+    location: "秋田縣 仙北市 乳頭溫泉鄉",
+    lat: 39.7627, lng: 140.7039,
+    price: "¥100,600",
+    url: "https://taenoyu.com/",
+    type: "onsen",
+    restaurants: [],
+    recs: [
+      { emoji: "♨️", name: "鶴の湯温泉", sub: "日本最具代表性露天溫泉", desc: "乳白色泉水加上茅草屋頂，係日本最上鏡嘅露天風呂，一定要去" },
+      { emoji: "♨️", name: "黒湯温泉", sub: "乳頭溫泉最古老", desc: "帶硫磺香氣嘅深色泉水配古樸木造浴室，歷史最悠久嘅溫泉之一" },
+      { emoji: "🏔️", name: "田沢湖", sub: "日本最深湖泊", desc: "鈷藍色湖水極為壯麗，湖畔有辰子像，車程約20分鐘" },
+      { emoji: "🛁", name: "乳頭温泉 湯めぐり", sub: "溫泉巡遊套票", desc: "買一張套票可以去7個不同溫泉，建議一大清早出發慢慢逛" }
+    ]
+  },
+  {
+    date: "9月1日", dow: "星期二", day: 7,
+    hotel: "青森屋（星野リゾート）",
+    location: "青森縣 三澤市",
+    lat: 40.6827, lng: 141.3869,
+    price: "¥87,940",
+    url: "https://hoshinoresorts.com/ja/hotels/aomoriya/",
+    type: "resort",
+    restaurants: [],
+    recs: [
+      { emoji: "🌊", name: "奥入瀬渓流", sub: "奥入瀬溪流", desc: "14公里嘅溪流步道，無數瀑布同苔蘚，係東北最美嘅自然景色之一。車程約1小時" },
+      { emoji: "🏔️", name: "十和田湖", sub: "十和田湖", desc: "巨大火口湖，湖水清澈見底。可以租船遊湖或者沿岸散步" },
+      { emoji: "🎭", name: "ねぶた 夕べショー", sub: "睡魔祭晚間表演", desc: "星野度假村每晚都有睡魔祭舞蹈表演，係入住嘅一大亮點，記得去睇" },
+      { emoji: "✈️", name: "三沢航空科学館", sub: "三澤航空科學館", desc: "度假村附近嘅航空歷史博物館，有唔少有趣展品值得參觀" }
+    ]
+  },
+  {
+    date: "9月2日", dow: "星期三", day: 8,
+    hotel: "ReLabo Medical Spa & Stay",
+    location: "青森市 青森站東口",
+    lat: 40.8288, lng: 140.7380,
+    price: "$253",
+    url: "https://en-46522.site-translation.com/",
+    type: "resort",
+    restaurants: [],
+    recs: [
+      { emoji: "🥁", name: "ねぶたの家 ワ・ラッセ", sub: "睡魔祭博物館", desc: "全年常設展示真正嘅睡魔大型花車，唔需要趕住8月份先可以感受到震撼嘅睡魔文化" },
+      { emoji: "🏺", name: "三内丸山遺跡", sub: "世界文化遺產・繩文遺址", desc: "5500年前嘅繩文時代聚落遺址，係聯合國教科文組織世界遺產，有復原古代建築可以參觀" },
+      { emoji: "🛍️", name: "A-FACTORY", sub: "港口市集", desc: "海旁嘅本地市集，青森蘋果酒、農產品同手信應有盡有" },
+      { emoji: "🎨", name: "青森県立美術館", sub: "縣立美術館", desc: "收藏夏卡爾同奈良美智作品嘅獨特美術館，建築設計本身都好有睇頭" },
+      { emoji: "🍎", name: "青森りんご", sub: "青森蘋果", desc: "青森係日本六成蘋果嘅產地，蘋果汁、蘋果批、蘋果糖等等隨處有得買，非常好食" }
+    ]
+  },
+  {
+    date: "9月3日", dow: "星期四", day: 9,
+    hotel: "桜楽Moana",
+    location: "青森縣 深浦町（日本海沿岸）",
+    lat: 40.6473, lng: 139.9275,
+    price: "¥41,000",
+    url: "https://www.sakura-moana.com/",
+    type: "onsen",
+    restaurants: [],
+    recs: [
+      { emoji: "🌳", name: "白神山地", sub: "世界文化遺產・原始山毛櫸林", desc: "大片未受破壞嘅原生山毛櫸森林，係世界遺產，設有多條登山路線" },
+      { emoji: "💧", name: "十二湖（青池）", sub: "神秘藍色湖泊", desc: "隱藏喺白神森林入面嘅12個湖泊，當中「青池」嘅鈷藍色極為神秘靚麗，一定要去睇" },
+      { emoji: "🚗", name: "日本海 パノラマドライブ", sub: "日本海全景公路", desc: "沿國道101號行，日本海嘅波濤同陡峭海岸線一路相伴，景色令人嘆為觀止" },
+      { emoji: "🌅", name: "深浦の夕日", sub: "深浦日落", desc: "旅館面向日本海西邊，可以係岸邊睇到極靚嘅夕陽，係今次旅程其中一個最浪漫嘅一刻" },
+      { emoji: "🦀", name: "深浦の海の幸", sub: "深浦海鮮", desc: "深浦係螃蟹同海膽嘅名產地，新鮮日本海海鮮一定要試" }
+    ]
+  },
+  {
+    date: "9月4日", dow: "星期五", day: 10,
+    hotel: "JR東日本ホテルメッツプレミア五反田",
+    location: "東京 五反田",
+    lat: 35.6260, lng: 139.7232,
+    price: "$274",
+    url: "https://www.hotelmets.jp/en/gotanda/",
+    carReturn: true,
+    type: "tokyo",
+    restaurants: [],
+    recs: [
+      { emoji: "🌸", name: "目黒川", sub: "目黒川河岸", desc: "咖啡廳同精品店林立嘅河岸步道，距五反田步行大約20分鐘" },
+      { emoji: "🏘️", name: "下北沢", sub: "次文化聖地", desc: "古著、獨立音樂、平價美食，係充滿個性嘅年輕人天地。電車15分鐘" },
+      { emoji: "🌿", name: "中目黒", sub: "Nakameguro", desc: "運河兩旁種滿櫻花樹，有唔少有質感嘅咖啡廳同餐廳" },
+      { emoji: "🍻", name: "五反田グルメ", sub: "五反田在地美食", desc: "車站附近有好多燒鳥、居酒屋同拉麵，遠離遊客，係真正嘅東京日常" }
+    ]
+  },
+  {
+    date: "9月5日", dow: "星期六", day: 11,
+    hotel: "JR東日本ホテルメッツプレミア五反田",
+    location: "東京 五反田",
+    lat: 35.6260, lng: 139.7232,
+    price: "$274",
+    url: "https://www.hotelmets.jp/en/gotanda/",
+    type: "tokyo",
+    restaurants: [],
+    recs: [
+      { emoji: "🏛️", name: "東京国立博物館", sub: "上野・東京國立博物館", desc: "日本規模最大嘅博物館，日本美術同文物藏品豐富，至少要預留3小時" },
+      { emoji: "🎮", name: "秋葉原", sub: "Akihabara", desc: "電器、動漫、復古遊戲嘅聖地，星期六特別熱鬧" },
+      { emoji: "⛩️", name: "浅草・浅草寺", sub: "淺草寺", desc: "東京最著名嘅寺院，仲見世商店街好有氣氛，坐人力車都係一個好體驗" },
+      { emoji: "🌈", name: "チームラボプラネッツ", sub: "teamLab Planets（豐洲）", desc: "沉浸式數碼藝術體驗，視覺效果非常震撼，週末要提前網上預約" }
+    ]
+  },
+  {
+    date: "9月6日", dow: "星期日", day: 12,
+    hotel: "JR東日本ホテルメッツプレミア五反田",
+    location: "東京 五反田",
+    lat: 35.6260, lng: 139.7232,
+    price: "$274",
+    url: "https://www.hotelmets.jp/en/gotanda/",
+    type: "tokyo",
+    restaurants: [],
+    recs: [
+      { emoji: "🌊", name: "浜離宮恩賜庭園", sub: "濱離宮庭園", desc: "東京灣旁嘅歷史庭園，四周被摩天大廈包圍，對比感十足，非常特別" },
+      { emoji: "🍣", name: "築地場外市場", sub: "築地場外市場", desc: "海鮮、玉子燒、抹茶甜品一應俱全，星期日上午人少啲，適合慢慢嘆" },
+      { emoji: "🌆", name: "六本木ヒルズ 森タワー", sub: "六本木之丘展望台", desc: "53樓展望台可以360度俯瞰整個東京，同時設有森美術館，值得參觀" },
+      { emoji: "🛒", name: "最後手信購物", sub: "臨走前掃手信", desc: "可以去渋谷Hikarie或者唐吉訶德，趁出發前最後一次掃手信" }
+    ]
+  }
+];
+
+const typeColors = {
+  tokyo:   "#6b21a8",
+  onsen:   "#b45309",
+  city:    "#1a1a2e",
+  resort:  "#065f46",
+  transit: "#9ca3af"
+};
+
+const typeLabels = {
+  tokyo:  "東京",
+  onsen:  "溫泉・旅館",
+  city:   "城市酒店",
+  resort: "度假村"
+};
+
+// Build map
+const map = L.map("map", { center: [39.5, 140.8], zoom: 7 });
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 18
+}).addTo(map);
+
+const routeCoords = itinerary.filter(d => d.lat && d.lng).map(d => [d.lat, d.lng]);
+L.polyline(routeCoords, { color: "#e8364a", weight: 2, opacity: 0.45, dashArray: "5, 8" }).addTo(map);
+
+const markers = [];
+const popups = [];
+
+itinerary.forEach((item, i) => {
+  if (!item.lat || !item.lng) { markers.push(null); popups.push(null); return; }
+
+  const color = typeColors[item.type] || "#1a1a2e";
+  const icon = L.divIcon({
+    className: "",
+    html: `<div style="background:${color};color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);cursor:pointer;">${item.day}</div>`,
+    iconSize: [28, 28], iconAnchor: [14, 14]
+  });
+
+  const popup = L.popup({ maxWidth: 300 }).setContent(buildPopup(item));
+  const marker = L.marker([item.lat, item.lng], { icon }).addTo(map);
+  marker.bindPopup(popup);
+  marker.on("click", () => selectDay(i, false));
+  markers.push(marker);
+  popups.push(popup);
+});
+
+// Legend
+const legendCtrl = L.control({ position: "bottomright" });
+legendCtrl.onAdd = () => {
+  const div = L.DomUtil.create("div", "legend");
+  div.innerHTML = Object.entries(typeLabels).map(([k, v]) =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${typeColors[k]}"></div><span>${v}</span></div>`
+  ).join("");
+  return div;
+};
+legendCtrl.addTo(map);
+
+function buildPopup(item) {
+  const restaurantsHtml = item.restaurants.length > 0
+    ? `<div class="popup-section-title">已預約餐廳</div>
+       ${item.restaurants.map(r => `
+         <div class="popup-restaurant">
+           <div class="popup-restaurant-emoji">${r.emoji}</div>
+           <div>
+             <div class="popup-restaurant-name">${r.name}</div>
+             <div class="popup-restaurant-sub">${r.sub}</div>
+             <div class="popup-restaurant-time">🕖 ${r.time}</div>
+           </div>
+         </div>`).join("")}`
+    : "";
+
+  const recsHtml = item.recs.length > 0
+    ? `<div class="popup-section-title">附近推薦景點</div>
+       ${item.recs.map(r => `
+         <div class="popup-rec">
+           <div class="popup-rec-emoji">${r.emoji}</div>
+           <div>
+             <div class="popup-rec-name">${r.name}</div>
+             ${r.sub ? `<div class="popup-rec-sub">${r.sub}</div>` : ""}
+             <div class="popup-rec-desc">${r.desc}</div>
+           </div>
+         </div>`).join("")}`
+    : "";
+
+  return `<div>
+    <div class="popup-day">第${item.day}日 · ${item.date}（${item.dow}）</div>
+    <div class="popup-hotel-name">${item.hotel}</div>
+    ${item.location ? `<div class="popup-location">📍 ${item.location}</div>` : ""}
+    ${item.price ? `<div class="popup-price">${item.price}</div>` : ""}
+    ${item.url ? `<a class="popup-link" href="${item.url}" target="_blank">查看酒店 →</a>` : ""}
+    ${restaurantsHtml}
+    ${recsHtml}
+  </div>`;
+}
+
+// Build sidebar
+const container = document.getElementById("itinerary");
+const cards = [];
+
+itinerary.forEach((item, i) => {
+  const card = document.createElement("div");
+  card.className = "day-card";
+
+  const restaurantsHtml = item.restaurants.map(r => `
+    <div class="restaurant-item">
+      <div class="restaurant-emoji">${r.emoji}</div>
+      <div class="restaurant-info">
+        <div class="restaurant-name">${r.name}</div>
+        <div class="restaurant-sub">${r.sub}</div>
+        <div class="restaurant-time">🕖 ${r.time}</div>
+        ${r.url ? `<a class="restaurant-link" href="${r.url}" target="_blank" onclick="event.stopPropagation()">🔗 餐廳網站</a>` : ""}
+      </div>
+    </div>`).join("");
+
+  const recItems = item.recs.map(r =>
+    `<div class="rec-item">
+      <div class="rec-emoji">${r.emoji}</div>
+      <div>
+        <div class="rec-name">${r.name}</div>
+        ${r.sub ? `<div class="rec-sub">${r.sub}</div>` : ""}
+        <div class="rec-desc">${r.desc}</div>
+      </div>
+    </div>`
+  ).join("");
+
+  const recsSection = item.recs.length > 0
+    ? `<div class="recs-toggle" data-index="${i}">
+        <span class="recs-arrow">▶</span> 附近推薦（${item.recs.length}個）
+      </div>
+      <div class="recs-list" id="recs-${i}">${recItems}</div>`
+    : "";
+
+  card.innerHTML = `
+    <div class="day-card-inner">
+      <div class="day-header">
+        <div class="day-num">${item.day}</div>
+        <div>
+          <div class="day-date">${item.date}</div>
+          <div class="day-dow">${item.dow}</div>
+        </div>
+      </div>
+      <div class="hotel-name">${item.hotel}</div>
+      <div class="hotel-meta">
+        ${item.location ? `<span>📍 ${item.location}</span>` : ""}
+        ${item.price ? `<span class="hotel-price">${item.price}</span>` : ""}
+      </div>
+      ${item.url ? `<a class="hotel-link" href="${item.url}" target="_blank" onclick="event.stopPropagation()">🔗 查看酒店</a>` : ""}
+      ${item.carPickup ? `<div class="car-info">🚗 於秋田站東口取車 · 13:30</div>` : ""}
+      ${item.carReturn ? `<div class="car-info">🚗 於秋田站東口還車 · 15:00</div>` : ""}
+      ${restaurantsHtml}
+    </div>
+    ${recsSection}
+  `;
+
+  card.addEventListener("click", () => selectDay(i));
+  container.appendChild(card);
+  cards.push(card);
+});
+
+// Rec toggles
+document.addEventListener("click", e => {
+  const btn = e.target.closest(".recs-toggle");
+  if (!btn) return;
+  e.stopPropagation();
+  const idx = btn.dataset.index;
+  const list = document.getElementById(`recs-${idx}`);
+  const arrow = btn.querySelector(".recs-arrow");
+  const open = list.classList.toggle("open");
+  arrow.textContent = open ? "▼" : "▶";
+});
+
+function selectDay(i, panMap = true) {
+  cards.forEach(c => c.classList.remove("active"));
+  cards[i].classList.add("active");
+  cards[i].scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+  const item = itinerary[i];
+  if (item.lat && item.lng && panMap) {
+    map.flyTo([item.lat, item.lng], 11, { duration: 1 });
+  }
+
+  markers.forEach(m => { if (m) m.closePopup(); });
+  if (markers[i]) setTimeout(() => markers[i].openPopup(), panMap ? 900 : 0);
+}
+
+const first = itinerary.findIndex(d => d.lat && d.lng);
+if (first >= 0) selectDay(first);
+</script>
+</body>
+</html>
