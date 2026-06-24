@@ -7,85 +7,480 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
+    /* ── Design tokens ───────────────────────────────────── */
+    :root {
+      --bg:              #f5f0eb;
+      --surface:         #ffffff;
+      --surface-subtle:  #f9f6f2;
+      --border:          #e0d8d0;
+      --border-light:    #f0ebe4;
+      --header:          #1a1a2e;
+      --accent:          #e8364a;
+      --accent-hover:    #c5203a;
+      --text:            #2c2c2c;
+      --text-muted:      #888;
+      --text-faint:      #a0a0c0;
+      --car-bg:          #eef4ff;
+      --car-text:        #3a5a99;
+      --rest-bg:         #f0faf4;
+      --rest-border:     #16a34a;
+      --rest-text:       #14532d;
+      --rest-sub:        #16a34a;
+      --rec-sub:         #e8364a;
+      --rec-toggle-bg:   #fff5f5;
+      --rec-list-bg:     #fdfaf8;
+      --shadow-sm:       0 2px 8px rgba(0,0,0,0.12);
+      --shadow-md:       0 4px 20px rgba(0,0,0,0.18);
+      --radius:          8px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:              #0f0f1a;
+        --surface:         #1a1a2e;
+        --surface-subtle:  #141422;
+        --border:          #2a2a45;
+        --border-light:    #222238;
+        --header:          #0d0d1f;
+        --text:            #e8e4e0;
+        --text-muted:      #7a7a9a;
+        --text-faint:      #5a5a7a;
+        --car-bg:          #1a2540;
+        --car-text:        #7ca8e8;
+        --rest-bg:         #0e2018;
+        --rest-border:     #1a6b2a;
+        --rest-text:       #6de896;
+        --rest-sub:        #4ade80;
+        --rec-sub:         #f87171;
+        --rec-toggle-bg:   #2a1520;
+        --rec-list-bg:     #131320;
+        --shadow-sm:       0 2px 8px rgba(0,0,0,0.4);
+        --shadow-md:       0 4px 20px rgba(0,0,0,0.5);
+      }
+    }
+
+    /* ── Reset & base ────────────────────────────────────── */
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'PingFang HK', 'Hiragino Sans', 'Noto Sans HK', system-ui, sans-serif;
-      background: #f5f0eb;
-      color: #2c2c2c;
+      background: var(--bg);
+      color: var(--text);
       height: 100vh;
       height: 100dvh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
     }
 
+    /* ── Header ──────────────────────────────────────────── */
     header {
-      background: #1a1a2e;
+      background: var(--header);
       color: #fff;
       padding: 12px 20px;
       display: flex;
       align-items: center;
       gap: 14px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      box-shadow: var(--shadow-sm);
       flex-shrink: 0;
+      z-index: 20;
     }
 
-    header .flag { font-size: 26px; }
+    header .flag { font-size: 26px; line-height: 1; }
     header h1 { font-size: 20px; font-weight: 700; }
-    header .subtitle { font-size: 12px; color: #a0a0c0; margin-top: 2px; }
+    header .subtitle { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
 
-    .car-badge {
+    .trip-status {
       margin-left: auto;
-      background: #e8364a;
-      color: #fff;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-badge {
       border-radius: 20px;
-      padding: 5px 14px;
+      padding: 5px 13px;
       font-size: 12px;
       font-weight: 600;
       white-space: nowrap;
-      flex-shrink: 0;
     }
 
+    .status-badge.countdown {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+    }
+
+    .status-badge.ongoing {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .car-badge {
+      background: rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.85);
+      border-radius: 20px;
+      padding: 5px 13px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* ── Layout ──────────────────────────────────────────── */
     .main { display: flex; flex: 1; overflow: hidden; }
 
-    /* SIDEBAR */
+    /* ── Sidebar ─────────────────────────────────────────── */
     .sidebar {
       width: 340px;
       flex-shrink: 0;
-      background: #fff;
+      background: var(--surface);
       overflow-y: auto;
-      border-right: 1px solid #e0d8d0;
+      border-right: 1px solid var(--border);
     }
+
+    .sidebar-header {
+      padding: 13px 18px;
+      background: var(--surface-subtle);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    /* ── Day cards ───────────────────────────────────────── */
+    .day-card {
+      border-bottom: 1px solid var(--border-light);
+      cursor: pointer;
+      transition: background 0.2s;
+      /* scroll-reveal: start hidden, JS adds .visible */
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.35s ease, transform 0.35s ease, background 0.2s;
+    }
+
+    .day-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .day-card.past { opacity: 0.5; }
+    .day-card.past.visible { opacity: 0.5; }
+
+    .day-card:hover { background: var(--surface-subtle); }
+
+    .day-card.active {
+      background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+      border-left: 3px solid var(--accent);
+    }
+
+    .day-card-inner { padding: 13px 18px 10px; }
+
+    .day-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .day-num {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--header);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .day-card.active .day-num {
+      background: var(--accent);
+      transform: scale(1.1);
+    }
+
+    .day-date-row {
+      display: flex;
+      align-items: baseline;
+      gap: 7px;
+    }
+
+    .day-date { font-size: 13px; font-weight: 700; color: var(--text); }
+    .day-dow { font-size: 11px; color: var(--text-muted); }
+
+    .today-badge {
+      font-size: 10px;
+      font-weight: 700;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 10px;
+      padding: 1px 7px;
+      letter-spacing: 0.3px;
+    }
+
+    .hotel-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.45;
+      margin-bottom: 4px;
+    }
+
+    .hotel-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+
+    .hotel-price { font-weight: 600; color: var(--text-muted); }
+
+    .hotel-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 11px;
+      transition: opacity 0.15s;
+    }
+    .hotel-link:hover { opacity: 0.75; }
+
+    .car-info {
+      background: var(--car-bg);
+      border-radius: var(--radius);
+      padding: 7px 10px;
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--car-text);
+      line-height: 1.4;
+    }
+
+    /* ── Restaurant bookings ─────────────────────────────── */
+    .restaurant-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      background: var(--rest-bg);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      margin-top: 8px;
+      border-left: 3px solid var(--rest-border);
+    }
+
+    .restaurant-emoji { font-size: 15px; flex-shrink: 0; }
+    .restaurant-info { flex: 1; min-width: 0; }
+
+    .restaurant-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--rest-text);
+      line-height: 1.3;
+    }
+
+    .restaurant-sub { font-size: 11px; color: var(--rest-sub); margin-top: 1px; }
+    .restaurant-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    .restaurant-link {
+      font-size: 11px;
+      color: var(--rest-sub);
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 2px;
+    }
+    .restaurant-link:hover { text-decoration: underline; }
+
+    /* ── Recommendations ─────────────────────────────────── */
+    .recs-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 600;
+      padding: 8px 18px;
+      cursor: pointer;
+      border-top: 1px dashed var(--border-light);
+      user-select: none;
+      transition: background 0.15s;
+    }
+    .recs-toggle:hover { background: var(--rec-toggle-bg); }
+
+    .recs-list {
+      display: none;
+      padding: 4px 18px 12px;
+      background: var(--rec-list-bg);
+    }
+    .recs-list.open { display: block; }
+
+    .rec-item {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .rec-item:last-child { border-bottom: none; }
+
+    .rec-emoji { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+    .rec-name { font-size: 12px; font-weight: 700; color: var(--text); line-height: 1.35; }
+    .rec-sub { font-size: 11px; color: var(--rec-sub); font-weight: 500; margin-top: 1px; }
+    .rec-desc { font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.5; }
+
+    /* ── Map ─────────────────────────────────────────────── */
+    #map { flex: 1; }
+
+    /* View transition names for animated tab switching */
+    #panel-itinerary { view-transition-name: panel-itinerary; }
+    #map             { view-transition-name: panel-map; }
+
+    @keyframes vt-slide-from-right {
+      from { transform: translateX(30px); opacity: 0; }
+    }
+    @keyframes vt-slide-to-left {
+      to { transform: translateX(-30px); opacity: 0; }
+    }
+    @keyframes vt-slide-from-left {
+      from { transform: translateX(-30px); opacity: 0; }
+    }
+    @keyframes vt-slide-to-right {
+      to { transform: translateX(30px); opacity: 0; }
+    }
+
+    html[data-vt="to-map"]::view-transition-old(panel-itinerary) {
+      animation: 250ms ease vt-slide-to-left;
+    }
+    html[data-vt="to-map"]::view-transition-new(panel-map) {
+      animation: 250ms ease vt-slide-from-right;
+    }
+    html[data-vt="to-itinerary"]::view-transition-old(panel-map) {
+      animation: 250ms ease vt-slide-to-right;
+    }
+    html[data-vt="to-itinerary"]::view-transition-new(panel-itinerary) {
+      animation: 250ms ease vt-slide-from-left;
+    }
+
+    /* ── Leaflet popup ───────────────────────────────────── */
+    .leaflet-popup-content-wrapper {
+      border-radius: 12px;
+      box-shadow: var(--shadow-md);
+      background: var(--surface);
+      color: var(--text);
+    }
+    .leaflet-popup-tip { background: var(--surface); }
+    .leaflet-popup-content {
+      margin: 14px 16px;
+      min-width: 230px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .popup-day { font-size: 11px; color: var(--accent); font-weight: 700; letter-spacing: 0.5px; margin-bottom: 3px; }
+    .popup-hotel-name { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; line-height: 1.3; }
+    .popup-location { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
+    .popup-price { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
+
+    .popup-link {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      margin-bottom: 10px;
+      transition: background 0.15s;
+    }
+    .popup-link:hover { background: var(--accent-hover); }
+
+    .popup-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      margin-top: 4px;
+      border-top: 1px solid var(--border-light);
+      padding-top: 8px;
+    }
+
+    .popup-restaurant {
+      display: flex;
+      gap: 7px;
+      margin-bottom: 8px;
+      background: var(--rest-bg);
+      border-radius: 6px;
+      padding: 6px 8px;
+      border-left: 2px solid var(--rest-border);
+    }
+    .popup-restaurant-emoji { font-size: 13px; flex-shrink: 0; }
+    .popup-restaurant-name { font-size: 12px; font-weight: 700; color: var(--rest-text); }
+    .popup-restaurant-sub { font-size: 11px; color: var(--rest-sub); margin-top: 1px; }
+    .popup-restaurant-time { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+    .popup-rec { display: flex; gap: 7px; margin-bottom: 8px; }
+    .popup-rec:last-child { margin-bottom: 0; }
+    .popup-rec-emoji { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+    .popup-rec-name { font-size: 12px; font-weight: 700; color: var(--text); }
+    .popup-rec-sub { font-size: 11px; color: var(--rec-sub); margin-top: 1px; }
+    .popup-rec-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+
+    /* ── Map legend ──────────────────────────────────────── */
+    .legend {
+      background: var(--surface);
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      font-size: 12px;
+      line-height: 2;
+      color: var(--text);
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── Scrollbar ───────────────────────────────────────── */
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-track { background: transparent; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
     /* ── Mobile tab bar ──────────────────────────────────── */
     .tab-bar {
       display: none;
       flex-shrink: 0;
-      background: #1a1a2e;
-      border-top: 1px solid rgba(255,255,255,0.1);
+      background: var(--header);
+      border-top: 1px solid rgba(255,255,255,0.07);
+      /* safe area for iPhone home indicator */
+      padding-bottom: env(safe-area-inset-bottom, 0px);
     }
 
     .tab-btn {
       flex: 1;
-      padding: 12px 0 10px;
+      padding: 10px 0 9px;
       border: none;
       background: none;
-      color: rgba(255,255,255,0.5);
+      color: rgba(255,255,255,0.4);
       font-family: inherit;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 3px;
       cursor: pointer;
-      transition: color 0.15s;
+      transition: color 0.2s;
       -webkit-tap-highlight-color: transparent;
     }
 
     .tab-btn.active { color: #fff; }
-
-    .tab-btn .tab-icon { font-size: 20px; line-height: 1; }
+    .tab-btn .tab-icon { font-size: 19px; line-height: 1; }
 
     /* ── Mobile overrides ────────────────────────────────── */
     @media (max-width: 767px) {
@@ -118,300 +513,19 @@
 
       #map.tab-active { display: block; }
 
-      /* Larger tap targets on mobile */
+      /* larger touch targets */
       .day-card-inner { padding: 14px 16px 10px; }
       .day-num { width: 34px; height: 34px; font-size: 12px; }
       .day-date { font-size: 14px; }
       .hotel-name { font-size: 14px; }
       .hotel-link, .restaurant-link { font-size: 12px; padding: 2px 0; }
-      .recs-toggle { padding: 11px 16px; font-size: 13px; }
+      .recs-toggle { padding: 12px 16px; font-size: 13px; }
       .rec-name { font-size: 13px; }
-      .rec-desc { font-size: 12px; }
-      .rec-sub { font-size: 12px; }
+      .rec-desc, .rec-sub { font-size: 12px; }
       .restaurant-name { font-size: 13px; }
       .restaurant-sub, .restaurant-time { font-size: 12px; }
       .sidebar-header { font-size: 13px; padding: 14px 16px; }
     }
-
-    .sidebar-header {
-      padding: 13px 18px;
-      background: #f9f6f2;
-      border-bottom: 1px solid #e0d8d0;
-      font-size: 12px;
-      font-weight: 700;
-      color: #888;
-      letter-spacing: 0.5px;
-    }
-
-    .day-card {
-      border-bottom: 1px solid #f0ebe4;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-
-    .day-card:hover { background: #faf7f4; }
-
-    .day-card.active {
-      background: #fff5f5;
-      border-left: 3px solid #e8364a;
-    }
-
-    .day-card-inner { padding: 13px 18px 10px; }
-
-    .day-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .day-num {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: #1a1a2e;
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .day-card.active .day-num { background: #e8364a; }
-
-    .day-date { font-size: 13px; font-weight: 700; color: #1a1a2e; }
-    .day-dow { font-size: 11px; color: #999; margin-top: 1px; }
-
-    .hotel-name {
-      font-size: 13px;
-      font-weight: 600;
-      color: #2c2c2c;
-      line-height: 1.45;
-      margin-bottom: 4px;
-    }
-
-    .hotel-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 11px;
-      color: #888;
-      flex-wrap: wrap;
-      margin-bottom: 4px;
-    }
-
-    .hotel-price { font-weight: 600; color: #555; }
-
-    .hotel-link {
-      color: #e8364a;
-      text-decoration: none;
-      font-size: 11px;
-    }
-    .hotel-link:hover { text-decoration: underline; }
-
-    .car-info {
-      background: #eef4ff;
-      border-radius: 6px;
-      padding: 7px 10px;
-      margin-top: 8px;
-      font-size: 11px;
-      color: #3a5a99;
-      line-height: 1.4;
-    }
-
-    /* Restaurant bookings */
-    .restaurant-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      background: #f0faf4;
-      border-radius: 6px;
-      padding: 8px 10px;
-      margin-top: 8px;
-      border-left: 3px solid #16a34a;
-    }
-
-    .restaurant-emoji { font-size: 15px; flex-shrink: 0; }
-
-    .restaurant-info { flex: 1; min-width: 0; }
-
-    .restaurant-name {
-      font-size: 12px;
-      font-weight: 700;
-      color: #14532d;
-      line-height: 1.3;
-    }
-
-    .restaurant-sub {
-      font-size: 11px;
-      color: #16a34a;
-      margin-top: 1px;
-    }
-
-    .restaurant-time {
-      font-size: 11px;
-      color: #555;
-      margin-top: 2px;
-    }
-
-    .restaurant-link {
-      font-size: 11px;
-      color: #16a34a;
-      text-decoration: none;
-      display: inline-block;
-      margin-top: 2px;
-    }
-    .restaurant-link:hover { text-decoration: underline; }
-
-    /* Recommendations */
-    .recs-toggle {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: #e8364a;
-      font-weight: 600;
-      padding: 8px 18px;
-      cursor: pointer;
-      border-top: 1px dashed #f0ebe4;
-      user-select: none;
-    }
-    .recs-toggle:hover { background: #fff5f5; }
-
-    .recs-list {
-      display: none;
-      padding: 4px 18px 12px;
-      background: #fdfaf8;
-    }
-    .recs-list.open { display: block; }
-
-    .rec-item {
-      display: flex;
-      gap: 8px;
-      align-items: flex-start;
-      padding: 7px 0;
-      border-bottom: 1px solid #f5f0ea;
-    }
-    .rec-item:last-child { border-bottom: none; }
-
-    .rec-emoji { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
-
-    .rec-name {
-      font-size: 12px;
-      font-weight: 700;
-      color: #1a1a2e;
-      line-height: 1.35;
-    }
-
-    .rec-sub {
-      font-size: 11px;
-      color: #e8364a;
-      font-weight: 500;
-      margin-top: 1px;
-    }
-
-    .rec-desc {
-      font-size: 11px;
-      color: #666;
-      margin-top: 3px;
-      line-height: 1.5;
-    }
-
-    /* MAP */
-    #map { flex: 1; }
-
-    .leaflet-popup-content-wrapper {
-      border-radius: 10px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-    }
-    .leaflet-popup-content {
-      margin: 14px 16px;
-      min-width: 230px;
-      max-height: 400px;
-      overflow-y: auto;
-    }
-
-    .popup-day {
-      font-size: 11px;
-      color: #e8364a;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      margin-bottom: 3px;
-    }
-
-    .popup-hotel-name {
-      font-size: 14px;
-      font-weight: 700;
-      color: #1a1a2e;
-      margin-bottom: 2px;
-      line-height: 1.3;
-    }
-
-    .popup-location { font-size: 11px; color: #888; margin-bottom: 2px; }
-    .popup-price { font-size: 12px; color: #555; font-weight: 600; margin-bottom: 8px; }
-
-    .popup-link {
-      display: inline-block;
-      background: #e8364a;
-      color: #fff;
-      border-radius: 5px;
-      padding: 5px 12px;
-      font-size: 12px;
-      font-weight: 600;
-      text-decoration: none;
-      margin-bottom: 10px;
-    }
-    .popup-link:hover { background: #c5203a; }
-
-    .popup-section-title {
-      font-size: 11px;
-      font-weight: 700;
-      color: #888;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
-      margin-top: 4px;
-      border-top: 1px solid #f0ebe4;
-      padding-top: 8px;
-    }
-
-    .popup-restaurant {
-      display: flex;
-      gap: 7px;
-      margin-bottom: 8px;
-      background: #f0faf4;
-      border-radius: 5px;
-      padding: 6px 8px;
-      border-left: 2px solid #16a34a;
-    }
-    .popup-restaurant-emoji { font-size: 13px; flex-shrink: 0; }
-    .popup-restaurant-name { font-size: 12px; font-weight: 700; color: #14532d; }
-    .popup-restaurant-sub { font-size: 11px; color: #16a34a; margin-top: 1px; }
-    .popup-restaurant-time { font-size: 11px; color: #555; margin-top: 1px; }
-
-    .popup-rec { display: flex; gap: 7px; margin-bottom: 8px; }
-    .popup-rec:last-child { margin-bottom: 0; }
-    .popup-rec-emoji { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
-    .popup-rec-name { font-size: 12px; font-weight: 700; color: #1a1a2e; }
-    .popup-rec-sub { font-size: 11px; color: #e8364a; margin-top: 1px; }
-    .popup-rec-desc { font-size: 11px; color: #666; margin-top: 2px; line-height: 1.4; }
-
-    /* Legend */
-    .legend {
-      background: white;
-      padding: 10px 14px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      font-size: 12px;
-      line-height: 2;
-    }
-    .legend-item { display: flex; align-items: center; gap: 8px; }
-    .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-
-    .sidebar::-webkit-scrollbar { width: 5px; }
-    .sidebar::-webkit-scrollbar-track { background: #f5f0eb; }
-    .sidebar::-webkit-scrollbar-thumb { background: #d0c8c0; border-radius: 3px; }
   </style>
 </head>
 <body>
@@ -420,9 +534,12 @@
   <span class="flag">🗾</span>
   <div>
     <h1>2026年 東北之旅</h1>
-    <div class="subtitle">2026年8月26日 – 9月7日　·　共12日</div>
+    <div class="subtitle" id="hdr-subtitle">2026年8月26日 – 9月7日　·　共12日</div>
   </div>
-  <div class="car-badge">🚗 Times租車　8/28〜9/4</div>
+  <div class="trip-status">
+    <span class="status-badge" id="status-badge" style="display:none"></span>
+    <span class="car-badge">🚗 Times租車　8/28〜9/4</span>
+  </div>
 </header>
 
 <div class="main">
@@ -443,6 +560,39 @@
 </nav>
 
 <script>
+/* ── Trip dates ──────────────────────────────────────────── */
+// Day 1 = Aug 26 2026, Day 12 = Sep 6 2026 (check-in dates)
+const TRIP_START = new Date(2026, 7, 26); // month is 0-indexed
+const TRIP_END   = new Date(2026, 8, 7);  // departure day
+
+function dayIndex(d) {
+  // returns 0-based index into itinerary[] for a given Date, or -1
+  const ms = d - TRIP_START;
+  const idx = Math.floor(ms / 86400000);
+  return (idx >= 0 && idx < 12) ? idx : -1;
+}
+
+function updateTripStatus() {
+  const now   = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const badge = document.getElementById("status-badge");
+
+  if (today < TRIP_START) {
+    const days = Math.round((TRIP_START - today) / 86400000);
+    badge.textContent = `距出發還有 ${days} 日`;
+    badge.className = "status-badge countdown";
+    badge.style.display = "";
+  } else if (today < TRIP_END) {
+    const dayNum = Math.floor((today - TRIP_START) / 86400000) + 1;
+    badge.textContent = `旅程第 ${dayNum} 日`;
+    badge.className = "status-badge ongoing";
+    badge.style.display = "";
+  }
+}
+
+updateTripStatus();
+
+/* ── Itinerary data ──────────────────────────────────────── */
 const itinerary = [
   {
     date: "8月26日", dow: "星期三", day: 1,
@@ -505,7 +655,7 @@ const itinerary = [
     restaurants: [],
     recs: [
       { emoji: "🌸", name: "展勝地公園", sub: "Tenshochi Park", desc: "北上川沿岸嘅大型公園，即使唔係櫻花季節都綠意盎然，非常舒適" },
-      { emoji: "⛵", name: "猊鼻渓", sub: "猊鼻渓谷遊船", desc: "石灰岩峭壁連綿嘅美景，坐船遊覽係一大特色。向南車程約1小時" },
+      { emoji: "⛵", name: "猊鼻渓", sub: "猊鼻渪谷遊船", desc: "石灰岩峭壁連綿嘅美景，坐船遊覽係一大特色。向南車程約1小時" },
       { emoji: "🏛️", name: "平泉", sub: "世界文化遺產", desc: "擁有中尊寺金色堂嘅世界遺產，唐代佛教文化保存極好。向南約45分鐘" },
       { emoji: "🚴", name: "北上川沿岸", sub: "河岸單車道", desc: "沿住流經市中心嘅河川，悠閒踩單車或散步都幾舒服" }
     ]
@@ -644,6 +794,12 @@ const itinerary = [
   }
 ];
 
+/* ── Determine today's day index ──────────────────────────── */
+const todayDate = new Date();
+const todayLocal = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
+const todayIdx   = dayIndex(todayLocal);
+
+/* ── Map ─────────────────────────────────────────────────── */
 const typeColors = {
   tokyo:   "#6b21a8",
   onsen:   "#b45309",
@@ -659,7 +815,6 @@ const typeLabels = {
   resort: "度假村"
 };
 
-// Build map
 const map = L.map("map", { center: [39.5, 140.8], zoom: 7 });
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -670,16 +825,26 @@ const routeCoords = itinerary.filter(d => d.lat && d.lng).map(d => [d.lat, d.lng
 L.polyline(routeCoords, { color: "#e8364a", weight: 2, opacity: 0.45, dashArray: "5, 8" }).addTo(map);
 
 const markers = [];
-const popups = [];
+const popups  = [];
 
 itinerary.forEach((item, i) => {
   if (!item.lat || !item.lng) { markers.push(null); popups.push(null); return; }
 
   const color = typeColors[item.type] || "#1a1a2e";
+  const isToday = (i === todayIdx);
   const icon = L.divIcon({
     className: "",
-    html: `<div style="background:${color};color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);cursor:pointer;">${item.day}</div>`,
-    iconSize: [28, 28], iconAnchor: [14, 14]
+    html: `<div style="
+      background:${isToday ? '#e8364a' : color};
+      color:#fff;border-radius:50%;
+      width:${isToday ? 34 : 28}px;height:${isToday ? 34 : 28}px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:${isToday ? 12 : 11}px;font-weight:700;
+      border:${isToday ? '3px' : '2px'} solid #fff;
+      box-shadow:0 2px 8px rgba(0,0,0,0.35);cursor:pointer;
+    ">${item.day}</div>`,
+    iconSize: [isToday ? 34 : 28, isToday ? 34 : 28],
+    iconAnchor: [isToday ? 17 : 14, isToday ? 17 : 14]
   });
 
   const popup = L.popup({ maxWidth: 300 }).setContent(buildPopup(item));
@@ -690,7 +855,6 @@ itinerary.forEach((item, i) => {
   popups.push(popup);
 });
 
-// Legend
 const legendCtrl = L.control({ position: "bottomright" });
 legendCtrl.onAdd = () => {
   const div = L.DomUtil.create("div", "legend");
@@ -739,13 +903,17 @@ function buildPopup(item) {
   </div>`;
 }
 
-// Build sidebar
+/* ── Build sidebar ────────────────────────────────────────── */
 const container = document.getElementById("itinerary");
 const cards = [];
 
 itinerary.forEach((item, i) => {
   const card = document.createElement("div");
-  card.className = "day-card";
+  const isPast   = (todayIdx >= 0 && i < todayIdx);
+  const isToday  = (i === todayIdx);
+  card.className = "day-card" + (isPast ? " past" : "");
+
+  const todayBadge = isToday ? `<span class="today-badge">今日</span>` : "";
 
   const restaurantsHtml = item.restaurants.map(r => `
     <div class="restaurant-item">
@@ -781,8 +949,11 @@ itinerary.forEach((item, i) => {
       <div class="day-header">
         <div class="day-num">${item.day}</div>
         <div>
-          <div class="day-date">${item.date}</div>
-          <div class="day-dow">${item.dow}</div>
+          <div class="day-date-row">
+            <span class="day-date">${item.date}</span>
+            <span class="day-dow">${item.dow}</span>
+            ${todayBadge}
+          </div>
         </div>
       </div>
       <div class="hotel-name">${item.hotel}</div>
@@ -803,70 +974,110 @@ itinerary.forEach((item, i) => {
   cards.push(card);
 });
 
-// Rec toggles
+/* ── Scroll-reveal via IntersectionObserver ───────────────── */
+const revealObserver = new IntersectionObserver(
+  (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("visible"); revealObserver.unobserve(e.target); } }),
+  { threshold: 0.05 }
+);
+cards.forEach(c => revealObserver.observe(c));
+
+/* ── Rec toggles ─────────────────────────────────────────── */
 document.addEventListener("click", e => {
   const btn = e.target.closest(".recs-toggle");
   if (!btn) return;
   e.stopPropagation();
-  const idx = btn.dataset.index;
+  const idx  = btn.dataset.index;
   const list = document.getElementById(`recs-${idx}`);
   const arrow = btn.querySelector(".recs-arrow");
   const open = list.classList.toggle("open");
   arrow.textContent = open ? "▼" : "▶";
 });
 
+/* ── Tab switching with View Transitions API ──────────────── */
+function switchTab(tab) {
+  if (window.innerWidth >= 768) return;
+
+  const sidebar = document.getElementById("panel-itinerary");
+  const mapEl   = document.getElementById("map");
+  const btnI    = document.getElementById("tab-itinerary");
+  const btnM    = document.getElementById("tab-map");
+
+  const doSwitch = () => {
+    if (tab === "map") {
+      sidebar.classList.remove("tab-active");
+      mapEl.classList.add("tab-active");
+      btnM.classList.add("active");
+      btnI.classList.remove("active");
+      map.invalidateSize();
+    } else {
+      mapEl.classList.remove("tab-active");
+      sidebar.classList.add("tab-active");
+      btnI.classList.add("active");
+      btnM.classList.remove("active");
+    }
+  };
+
+  if (document.startViewTransition) {
+    document.documentElement.dataset.vt = tab === "map" ? "to-map" : "to-itinerary";
+    document.startViewTransition(() => {
+      doSwitch();
+    }).finished.then(() => {
+      delete document.documentElement.dataset.vt;
+    });
+  } else {
+    doSwitch();
+  }
+}
+
+/* ── Swipe gesture (mobile) ──────────────────────────────── */
+let swipeStartX = null;
+
+document.addEventListener("touchstart", e => {
+  swipeStartX = e.touches[0].clientX;
+}, { passive: true });
+
+document.addEventListener("touchend", e => {
+  if (swipeStartX === null || window.innerWidth >= 768) return;
+  const dx = e.changedTouches[0].clientX - swipeStartX;
+  swipeStartX = null;
+  if (Math.abs(dx) < 60) return; // too short
+  const mapActive = document.getElementById("map").classList.contains("tab-active");
+  if (dx < 0 && !mapActive) switchTab("map");       // swipe left → map
+  if (dx > 0 && mapActive)  switchTab("itinerary"); // swipe right → itinerary
+}, { passive: true });
+
+/* ── Select day ──────────────────────────────────────────── */
 function selectDay(i, panMap = true) {
   cards.forEach(c => c.classList.remove("active"));
   cards[i].classList.add("active");
   cards[i].scrollIntoView({ behavior: "smooth", block: "nearest" });
 
-  const item = itinerary[i];
+  const item     = itinerary[i];
   const isMobile = window.innerWidth < 768;
 
-  if (item.lat && item.lng) {
-    if (isMobile && panMap) {
-      switchTab("map");
-      setTimeout(() => {
-        map.flyTo([item.lat, item.lng], 12, { duration: 1 });
-        markers.forEach(m => { if (m) m.closePopup(); });
-        if (markers[i]) setTimeout(() => markers[i].openPopup(), 900);
-      }, 50);
-    } else if (panMap) {
-      map.flyTo([item.lat, item.lng], 11, { duration: 1 });
+  if (!item.lat || !item.lng) return;
+
+  if (isMobile && panMap) {
+    switchTab("map");
+    setTimeout(() => {
+      map.flyTo([item.lat, item.lng], 12, { duration: 1 });
       markers.forEach(m => { if (m) m.closePopup(); });
       if (markers[i]) setTimeout(() => markers[i].openPopup(), 900);
-    } else {
-      markers.forEach(m => { if (m) m.closePopup(); });
-      if (markers[i]) setTimeout(() => markers[i].openPopup(), 0);
-    }
-  }
-}
-
-function switchTab(tab) {
-  const isMobile = window.innerWidth < 768;
-  if (!isMobile) return;
-
-  const sidebar = document.getElementById("panel-itinerary");
-  const mapEl = document.getElementById("map");
-  const btnItinerary = document.getElementById("tab-itinerary");
-  const btnMap = document.getElementById("tab-map");
-
-  if (tab === "itinerary") {
-    sidebar.classList.add("tab-active");
-    mapEl.classList.remove("tab-active");
-    btnItinerary.classList.add("active");
-    btnMap.classList.remove("active");
+    }, 280); // after transition completes
+  } else if (panMap) {
+    map.flyTo([item.lat, item.lng], 11, { duration: 1 });
+    markers.forEach(m => { if (m) m.closePopup(); });
+    if (markers[i]) setTimeout(() => markers[i].openPopup(), 900);
   } else {
-    mapEl.classList.add("tab-active");
-    sidebar.classList.remove("tab-active");
-    btnMap.classList.add("active");
-    btnItinerary.classList.remove("active");
-    map.invalidateSize();
+    markers.forEach(m => { if (m) m.closePopup(); });
+    if (markers[i]) setTimeout(() => markers[i].openPopup(), 0);
   }
 }
 
-const first = itinerary.findIndex(d => d.lat && d.lng);
-if (first >= 0) selectDay(first);
+/* ── Default selection ───────────────────────────────────── */
+// Jump to today if during trip, otherwise first located stop
+const defaultIdx = todayIdx >= 0 ? todayIdx : itinerary.findIndex(d => d.lat && d.lng);
+if (defaultIdx >= 0) selectDay(defaultIdx);
 </script>
 </body>
 </html>
