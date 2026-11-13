@@ -4,12 +4,21 @@ This is a personal GitHub Pages site used primarily as a **travel planner** for 
 
 ---
 
+> **Exception — root `index.html` is Anson's English portfolio**, not a trip. None of the
+> Cantonese, travel design system or itinerary rules below apply to it. Work history comes from the
+> Obsidian `Career/Experience.md` only. NDA/coworker caution: the Work timeline is company, title,
+> dates and tool tags only — no accomplishment bullets, metrics or team/domain descriptions for any
+> employer. The hero diagrams show personal projects only — never Tesla systems. Single self-contained file,
+> no build step. Hero diagrams live in the `SYSTEMS` array in its script; photo is `assets/anson.jpg`.
+
 ## Repository Structure
 
 ```
 ansoncht.github.io/
 ├── CLAUDE.md               ← you are here
 ├── README.md
+├── index.html              ← portfolio (English)
+├── assets/anson.jpg
 └── 2026/
     └── Tohoku/
         └── index.html      ← 2026 Tohoku trip planner

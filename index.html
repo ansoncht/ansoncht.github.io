@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Anson Chung</title>
+<meta name="description" content="Anson Chung, senior software engineer at Tesla. Distributed systems in Go, Kubernetes, and the AI built on top of them.">
+<meta property="og:title" content="Anson Chung">
+<meta property="og:description" content="Senior software engineer at Tesla. Distributed systems, Kubernetes, and the AI built on top of them.">
+<meta property="og:image" content="https://ansoncht.github.io/assets/anson.jpg">
+<meta name="theme-color" content="#0E1621">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: dark;
+    --ground: #0E1621;
+    --panel: #142030;
+    --line: #273649;
+    --line-strong: #3A4D63;
+    --ink: #E6ECF2;
+    --muted: #8B9CB1;
+    --signal: #F2B33D;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --cond: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --gutter: clamp(1rem, 4vw, 2.5rem);
+    --max: 72rem;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font: 400 1rem/1.6 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration-color: var(--line-strong); text-underline-offset: 0.2em; }
+  a:hover { text-decoration-color: var(--signal); }
+  :focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 2px; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding-inline: var(--gutter); }
+
+  /* Header */
+  .top {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--ground) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .top .wrap { display: flex; align-items: center; gap: 1.5rem; height: 3.5rem; }
+  .brand { font: 600 1.05rem/1 var(--cond); text-decoration: none; letter-spacing: 0.01em; margin-right: auto; }
+  .top nav { display: flex; gap: 1.25rem; }
+  .top nav a { text-decoration: none; color: var(--muted); font-size: 0.9rem; }
+  .top nav a:hover { color: var(--ink); }
+  .kbtn {
+    font: 500 0.8rem/1 var(--sans); color: var(--muted);
+    background: transparent; border: 1px solid var(--line); border-radius: 6px;
+    padding: 0.45rem 0.6rem; cursor: pointer; display: inline-flex; gap: 0.5rem; align-items: center;
+  }
+  .kbtn:hover { color: var(--ink); border-color: var(--line-strong); }
+  kbd { font: 500 0.72rem/1 var(--mono); border: 1px solid var(--line-strong); border-radius: 4px; padding: 0.15rem 0.3rem; }
+  @media (max-width: 40rem) { .top nav { display: none; } }
+
+  /* Hero */
+  .hero { padding-block: clamp(2.5rem, 7vw, 5rem) clamp(3rem, 7vw, 5.5rem); }
+  .hero-grid { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: clamp(2rem, 5vw, 4rem); align-items: start; }
+  @media (max-width: 60rem) { .hero-grid { grid-template-columns: minmax(0, 1fr); } }
+  h1 {
+    font: 600 clamp(2.3rem, 4.6vw, 3.6rem)/1.04 var(--cond);
+    letter-spacing: -0.015em; margin: 0 0 1.5rem; text-wrap: balance;
+  }
+  .lede { color: var(--muted); font-size: 1.075rem; max-width: 34rem; margin: 0 0 1.75rem; }
+  .lede strong { color: var(--ink); font-weight: 500; }
+  .status { display: flex; align-items: center; gap: 0.6rem; color: var(--muted); font-size: 0.9rem; margin: 0 0 1.75rem; }
+  .me { flex: none; width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line-strong); }
+  .links { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font: 500 0.92rem/1 var(--sans); text-decoration: none;
+    padding: 0.75rem 1rem; border-radius: 6px; border: 1px solid var(--line-strong); background: transparent; color: var(--ink); cursor: pointer;
+  }
+  .btn:hover { border-color: var(--ink); }
+  .btn.primary { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+  .btn.primary:hover { background: #fff; }
+
+  /* System diagram */
+  .scope { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overflow: hidden; }
+  .tabs { display: flex; overflow-x: auto; border-bottom: 1px solid var(--line); scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: none; background: none; border: 0; border-bottom: 2px solid transparent;
+    color: var(--muted); font: 500 0.85rem/1 var(--sans); padding: 0.95rem 1rem 0.85rem; cursor: pointer; white-space: nowrap;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--signal); }
+  .tab:focus-visible { outline-offset: -4px; }
+  .canvas {
+    overflow-x: auto;
+    background-image:
+      repeating-linear-gradient(0deg, transparent 0 23px, rgba(58, 77, 99, 0.22) 23px 24px),
+      repeating-linear-gradient(90deg, transparent 0 23px, rgba(58, 77, 99, 0.22) 23px 24px);
+  }
+  .canvas svg { display: block; width: 100%; min-width: 34rem; height: auto; padding: 0.75rem; }
+  .canvas svg.swap { animation: swap 0.35s ease-out; }
+  @keyframes swap { from { opacity: 0; } to { opacity: 1; } }
+  .edge { fill: none; stroke: var(--line-strong); stroke-width: 1.25; }
+  .node rect { fill: var(--panel); stroke: var(--line-strong); stroke-width: 1; }
+  .node .tick { stroke: var(--muted); stroke-width: 1.25; fill: none; }
+  .node.core rect { stroke: var(--ink); }
+  .node text { font-family: var(--mono); }
+  .node .l { fill: var(--ink); font-size: 12px; font-weight: 500; }
+  .node .s { fill: var(--muted); font-size: 10px; }
+  .packet { fill: var(--signal); }
+  .readout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 1.25rem 2rem; padding: 1.25rem 1.25rem 1.4rem; border-top: 1px solid var(--line); }
+  @media (max-width: 36rem) { .readout { grid-template-columns: minmax(0, 1fr); } }
+  .readout h2 { font: 600 1.15rem/1.2 var(--cond); margin: 0 0 0.4rem; }
+  .readout p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+  .stats { display: grid; gap: 0.9rem; align-content: start; margin: 0; }
+  .stats div { display: grid; gap: 0.1rem; }
+  .stats dt { font: 600 1.35rem/1.1 var(--cond); color: var(--ink); }
+  .stats dd { margin: 0; color: var(--muted); font-size: 0.85rem; line-height: 1.4; }
+
+  /* Sections */
+  section.block { border-top: 1px solid var(--line); padding-block: clamp(3rem, 7vw, 5rem); }
+  .block-head { display: grid; grid-template-columns: 14rem minmax(0, 1fr); gap: 2rem; }
+  @media (max-width: 52rem) { .block-head { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; } }
+  .block-head > h2 { font: 600 1.6rem/1.15 var(--cond); margin: 0; position: sticky; top: 5rem; align-self: start; }
+  @media (max-width: 52rem) { .block-head > h2 { position: static; } }
+  .intro { color: var(--muted); margin: 0 0 2rem; max-width: 40rem; }
+
+  .timeline { list-style: none; margin: 0; padding: 0; }
+  .role { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: 0.25rem 1.5rem; padding-block: 1.5rem; border-bottom: 1px solid var(--line); }
+  .role:first-child { padding-top: 0; }
+  .role:last-child { border-bottom: 0; }
+  @media (max-width: 36rem) { .role { grid-template-columns: minmax(0, 1fr); } }
+  .when { color: var(--muted); font-size: 0.88rem; padding-top: 0.2rem; font-variant-numeric: tabular-nums; }
+  .role h3 { font: 600 1.2rem/1.25 var(--cond); margin: 0; }
+  .role .title { color: var(--muted); margin: 0; font-size: 0.95rem; }
+  .role .stack { margin-top: 0.75rem; padding: 0; }
+  .role ul { margin: 0; padding-left: 1.1rem; max-width: 44rem; }
+  .role li { margin-bottom: 0.5rem; }
+  .role li::marker { color: var(--line-strong); }
+  .role li b { font-weight: 500; }
+  .sys-link { background: none; border: 0; padding: 0; color: var(--ink); font: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 0.2em; cursor: pointer; }
+  .sys-link:hover { text-decoration-color: var(--signal); }
+
+  .lab { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  @media (max-width: 44rem) { .lab { grid-template-columns: minmax(0, 1fr); } }
+  .proj { background: var(--ground); padding: 1.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
+  .proj h3 { font: 600 1.25rem/1.2 var(--cond); margin: 0; }
+  .proj .role-tag { color: var(--signal); font-size: 0.85rem; margin: -0.35rem 0 0; }
+  .proj p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+  .stack { display: flex; flex-wrap: wrap; gap: 0.4rem; list-style: none; padding: 0; margin: auto 0 0; padding-top: 0.5rem; }
+  .stack li { font-size: 0.78rem; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0.2rem 0.45rem; }
+  .proj-actions { display: flex; gap: 1rem; font-size: 0.9rem; }
+
+  .contact p { font-size: clamp(1.4rem, 3vw, 2rem); font-family: var(--cond); font-weight: 500; line-height: 1.25; margin: 0 0 1.75rem; max-width: 36rem; }
+  .email { font-family: var(--mono); font-size: 1rem; }
+  .toast { color: #5FC9A8; font-size: 0.85rem; min-height: 1.3em; margin-top: 0.75rem; }
+
+  footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 0.85rem; padding-block: 2rem calc(2rem + env(safe-area-inset-bottom, 0px)); }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; }
+
+  /* Command palette */
+  dialog.palette {
+    width: min(36rem, calc(100vw - 2rem)); margin: 12vh auto auto; padding: 0;
+    background: var(--panel); color: var(--ink); border: 1px solid var(--line-strong); border-radius: 10px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  }
+  dialog.palette::backdrop { background: rgba(6, 10, 16, 0.6); backdrop-filter: blur(2px); }
+  .palette input {
+    width: 100%; background: transparent; border: 0; border-bottom: 1px solid var(--line);
+    color: var(--ink); font: 400 1rem/1 var(--sans); padding: 1.1rem 1.1rem;
+  }
+  .palette input:focus { outline: none; }
+  .palette ul { list-style: none; margin: 0; padding: 0.4rem; max-height: 50vh; overflow-y: auto; }
+  .palette li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.65rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.95rem; }
+  .palette li span { color: var(--muted); font-size: 0.8rem; }
+  .palette li[aria-selected="true"] { background: var(--line); }
+  .palette .empty { color: var(--muted); cursor: default; }
+  .palette .hint { border-top: 1px solid var(--line); color: var(--muted); font-size: 0.78rem; padding: 0.6rem 1.1rem; display: flex; gap: 1rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .canvas svg.swap { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top">Anson Chung</a>
+    <nav aria-label="Sections">
+      <a href="#work">Work</a>
+      <a href="#lab">Side projects</a>
+      <a href="#contact">Contact</a>
+    </nav>
+    <button class="kbtn" type="button" id="open-palette" aria-haspopup="dialog">Jump to <kbd id="kbd-hint">⌘K</kbd></button>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap hero">
+    <div class="hero-grid">
+      <div>
+        <h1>I build backend systems that hold up under real load, and the AI that runs on them.</h1>
+        <p class="lede">Senior software engineer at <strong>Tesla</strong>. I work mostly in Go, Kubernetes, gRPC and Kafka, and lately with LLMs. Outside work I co-founded <strong>Poyeah</strong>, a social travel app.</p>
+        <p class="status"><img class="me" src="assets/anson.jpg" width="48" height="48" alt="Photo of Anson Chung">Based in San Francisco. UCLA Computer Science, 2023.</p>
+        <div class="links">
+          <a class="btn primary" href="mailto:ansoncht@gmail.com">Email me</a>
+          <a class="btn" href="https://github.com/ansoncht" rel="noopener">GitHub</a>
+          <a class="btn" href="https://www.linkedin.com/in/anson-chung/" rel="noopener">LinkedIn</a>
+        </div>
+      </div>
+
+      <div class="scope" id="systems">
+        <div class="tabs" role="tablist" aria-label="Systems I built outside work"></div>
+        <div class="canvas" id="canvas"></div>
+        <div class="readout" aria-live="polite">
+          <div><h2 id="sys-title"></h2><p id="sys-caption"></p></div>
+          <dl class="stats" id="sys-stats"></dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="block" id="work" aria-labelledby="work-h">
+    <div class="wrap block-head">
+      <h2 id="work-h">Work</h2>
+      <div>
+        <ol class="timeline" reversed>
+          <li class="role">
+            <div class="when">2026 – now</div>
+            <div>
+              <h3>Tesla</h3>
+              <p class="title">Senior Software Engineer</p>
+              <ul class="stack" aria-label="Tools"><li>Go</li><li>TypeScript</li><li>Next.js</li><li>Three.js</li><li>Temporal</li><li>LLMs</li><li>Playwright</li></ul>
+            </div>
+          </li>
+          <li class="role">
+            <div class="when">2023 – 2026</div>
+            <div>
+              <h3>Tesla</h3>
+              <p class="title">Software Engineer</p>
+              <ul class="stack" aria-label="Tools"><li>Go</li><li>Java</li><li>Kubernetes</li><li>gRPC</li><li>Kafka</li><li>Temporal</li><li>Redis</li><li>Prometheus</li><li>Grafana</li></ul>
+            </div>
+          </li>
+          <li class="role">
+            <div class="when">Summer 2022</div>
+            <div>
+              <h3>Tesla</h3>
+              <p class="title">Software Engineering Intern</p>
+              <ul class="stack" aria-label="Tools"><li>Flutter</li><li>Go</li><li>MySQL</li></ul>
+            </div>
+          </li>
+          <li class="role">
+            <div class="when">2021 – 2022</div>
+            <div>
+              <h3>Dolby Laboratories</h3>
+              <p class="title">Software Engineering Intern</p>
+              <ul class="stack" aria-label="Tools"><li>C++</li><li>TensorFlow</li><li>CMake</li></ul>
+            </div>
+          </li>
+          <li class="role">
+            <div class="when">Summer 2021</div>
+            <div>
+              <h3>Amazon</h3>
+              <p class="title">Software Engineering Intern, Astro home robot</p>
+              <ul class="stack" aria-label="Tools"><li>Python</li><li>ROS</li><li>Gazebo</li></ul>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="lab" aria-labelledby="lab-h">
+    <div class="wrap block-head">
+      <h2 id="lab-h">Side projects</h2>
+      <div>
+        <p class="intro">Things I build with friends and on my own time. Most of them run on free-tier cloud, so a lot of the engineering is about making small machines do a lot. Each one has an architecture diagram at the top of the page.</p>
+        <div class="lab">
+          <article class="proj">
+            <h3>Poyeah</h3>
+            <p class="role-tag">Co-founder, backend and infrastructure</p>
+            <p>A social travel app for iOS and Android in English and Traditional Chinese. I lead a team of four and moved the backend to Oracle Kubernetes when the old host kept running out of memory.</p>
+            <div class="proj-actions"><button class="sys-link" data-sys="poyeah">View architecture</button></div>
+            <ul class="stack"><li>React Native</li><li>Spring Boot</li><li>FastAPI</li><li>AstraDB</li><li>Kubernetes</li></ul>
+          </article>
+          <article class="proj">
+            <h3>Cateteria</h3>
+            <p class="role-tag">Solo</p>
+            <p>An iOS app for cat owners: profiles, food inventory and feeding schedules. Deployed with Helm and Argo CD on my own Kubernetes cluster.</p>
+            <div class="proj-actions"><button class="sys-link" data-sys="cateteria">View architecture</button></div>
+            <ul class="stack"><li>Flutter</li><li>FastAPI</li><li>AstraDB</li><li>Firebase Auth</li><li>Argo CD</li></ul>
+          </article>
+          <article class="proj">
+            <h3>Flight pipeline</h3>
+            <p class="role-tag">Solo, open source</p>
+            <p>Event-driven Go services that ingest Hong Kong airport and OpenSky flight data through Kafka and post a daily summary of delays and routes to X and Threads.</p>
+            <div class="proj-actions"><button class="sys-link" data-sys="flight">View architecture</button><a href="https://github.com/ansoncht/flight-microservices" rel="noopener">Source</a></div>
+            <ul class="stack"><li>Go</li><li>Kafka</li><li>MongoDB</li><li>Docker</li></ul>
+          </article>
+          <article class="proj">
+            <h3>Personal cluster</h3>
+            <p class="role-tag">Solo</p>
+            <p>The GitOps setup my own apps deploy to: Helm charts for Argo CD, NGINX ingress, OCI Vault secrets and Grafana monitoring.</p>
+            <div class="proj-actions"><button class="sys-link" data-sys="cluster">View architecture</button></div>
+            <ul class="stack"><li>Kubernetes</li><li>Helm</li><li>Argo CD</li><li>Grafana</li><li>OCI</li></ul>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block contact" id="contact" aria-labelledby="contact-h">
+    <div class="wrap block-head">
+      <h2 id="contact-h">Contact</h2>
+      <div>
+        <p>Hiring for backend, infrastructure or AI platform work? Email is the fastest way to reach me.</p>
+        <div class="links">
+          <a class="btn primary email" href="mailto:ansoncht@gmail.com">ansoncht@gmail.com</a>
+          <button class="btn" type="button" id="copy-email">Copy email</button>
+        </div>
+        <div class="toast" id="toast" role="status"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Anson Chung</span>
+  </div>
+</footer>
+
+<dialog class="palette" id="palette" aria-label="Jump to">
+  <input id="pal-input" type="text" placeholder="Search sections, systems and links" aria-label="Search" aria-controls="pal-list" autocomplete="off" spellcheck="false">
+  <ul id="pal-list" role="listbox"></ul>
+  <div class="hint"><span><kbd>↑</kbd> <kbd>↓</kbd> to move</span><span><kbd>↵</kbd> to open</span><span><kbd>esc</kbd> to close</span></div>
+</dialog>
+
+<script>
+(() => {
+  const EMAIL = "ansoncht@gmail.com";
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Grid: 4 columns, 3 rows. Node size W x H.
+  const W = 136, H = 56;
+  const C = [8, 156, 304, 452], R = [24, 126, 228];
+  const n = (id, c, r, l, s, core) => ({ id, x: C[c], y: R[r], l, s, core });
+
+  const SYSTEMS = [
+    {
+      id: "poyeah", keys: "react native expo spring boot java kubernetes oke vector search openai translation", tab: "Poyeah", title: "Poyeah, co-founder",
+      caption: "A social travel app built with friends. I own the backend and infrastructure: a Spring Boot API on Oracle Kubernetes, vector search over travel posts, and machine translation between English and Traditional Chinese.",
+      stats: [["Team of 4", "engineering and design, from idea to production"], ["Render → OKE", "move that ended out-of-memory crashes"]],
+      nodes: [n("app", 0, 1, "Mobile app", "React Native, Expo"), n("auth", 1, 0, "Firebase Auth", "user identity"), n("api", 1, 1, "Core API", "Spring Boot on OKE", true), n("llm", 2, 0, "OpenAI", "post translation"), n("search", 2, 2, "Semantic search", "FastAPI embeddings"), n("db", 3, 1, "AstraDB", "data and vectors")],
+      flows: [["app", "api", "db"], ["app", "auth"], ["api", "llm"], ["api", "search", "db"]]
+    },
+    {
+      id: "flight", keys: "go kafka mongodb event-driven open source microservices", tab: "Flight pipeline", title: "Flight pipeline, open source",
+      caption: "Three Go services joined by Kafka. The reader pulls Hong Kong airport and OpenSky data, the processor stores flights in MongoDB and builds a daily summary, and the poster publishes it to Threads and X at midnight.",
+      stats: [["3 services", "reader, processor and poster, each deployed on its own"], ["Kafka-backed", "summaries still go out after a service outage"]],
+      nodes: [n("feeds", 0, 1, "Flight APIs", "HKIA, OpenSky"), n("reader", 1, 1, "Reader", "Go"), n("kafka", 2, 1, "Kafka", "consumer groups", true), n("proc", 2, 2, "Processor", "daily summarizer"), n("mongo", 3, 2, "MongoDB", "nested flight docs"), n("poster", 3, 1, "Poster", "Go"), n("social", 3, 0, "Threads, X", "midnight digest")],
+      flows: [["feeds", "reader", "kafka", "poster", "social"], ["kafka", "proc", "mongo", "poster"]]
+    },
+    {
+      id: "cateteria", keys: "flutter dart fastapi python astradb firebase oci ios cats", tab: "Cateteria", title: "Cateteria, solo",
+      caption: "An iOS app for cat owners to track profiles, food inventory and feeding schedules. A Flutter client talks to a FastAPI backend that verifies Firebase tokens, keeps data in AstraDB and stores photos in OCI Object Storage.",
+      stats: [["Free tier", "runs entirely on OCI and AstraDB free tiers"], ["Dev and prod", "separate environments, deployed with Argo CD"]],
+      nodes: [n("app", 0, 1, "iOS app", "Flutter, BLoC"), n("auth", 1, 0, "Firebase Auth", "sign-in, JWT"), n("api", 1, 1, "API", "FastAPI on OKE", true), n("store", 2, 2, "Object Storage", "cat photos"), n("db", 3, 1, "AstraDB", "cats, food, feeds")],
+      flows: [["app", "api", "db"], ["app", "auth"], ["api", "store"]]
+    },
+    {
+      id: "cluster", keys: "kubernetes helm argo cd gitops nginx grafana oci vault secrets infra devops", tab: "Personal cluster", title: "Personal cluster, solo",
+      caption: "The Kubernetes cluster on Oracle Cloud that my own apps run on. Everything is declared in Git: Argo CD syncs Helm charts into each environment, NGINX handles ingress, secrets come from OCI Vault, and Grafana watches it all.",
+      stats: [["Git is the source", "Argo CD auto-syncs and self-heals every app"], ["3 environments", "dev, staging and prod namespaces"]],
+      nodes: [n("git", 0, 1, "Git repo", "Helm charts"), n("argo", 1, 1, "Argo CD", "sync, self-heal", true), n("ingress", 2, 0, "NGINX ingress", "public traffic"), n("cat", 2, 1, "Cateteria", "dev and prod"), n("flight", 2, 2, "Flight services", "3 Go services"), n("vault", 3, 1, "OCI Vault", "secrets CSI driver"), n("mon", 3, 2, "Grafana", "cluster monitoring")],
+      flows: [["git", "argo", "cat"], ["argo", "flight", "mon"], ["ingress", "cat"], ["vault", "cat"]]
+    }
+  ];
+
+  // Orthogonal route between two nodes.
+  function route(a, b) {
+    if (b.x < a.x + W && b.x + W > a.x) {
+      const x1 = a.x + W / 2, x2 = b.x + W / 2, down = b.y > a.y;
+      const y1 = down ? a.y + H : a.y, y2 = down ? b.y : b.y + H, my = (y1 + y2) / 2;
+      return `M${x1} ${y1} V${my} H${x2} V${y2}`;
+    }
+    const right = b.x > a.x;
+    const x1 = right ? a.x + W : a.x, x2 = right ? b.x : b.x + W;
+    const y1 = a.y + H / 2, y2 = b.y + H / 2, mx = (x1 + x2) / 2;
+    return `M${x1} ${y1} H${mx} V${y2} H${x2}`;
+  }
+
+  const SVG = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs = {}, parent) => {
+    const e = document.createElementNS(SVG, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+
+  const canvas = document.getElementById("canvas");
+  const tablist = document.querySelector(".tabs");
+  let packets = [], current = null, first = true;
+
+  function render(sys) {
+    current = sys;
+    canvas.textContent = "";
+    const bottom = Math.max(...sys.nodes.map(x => x.y)) + H + 24;
+    const svg = el("svg", { viewBox: `0 0 596 ${bottom}`, role: "img", "aria-label": `Architecture diagram: ${sys.title}. ${sys.caption}` });
+    const byId = Object.fromEntries(sys.nodes.map(x => [x.id, x]));
+    const gEdges = el("g", {}, svg), gPackets = el("g", {}, svg), gNodes = el("g", {}, svg);
+    const seen = new Set();
+    packets = [];
+
+    for (const flow of sys.flows) {
+      const segs = [];
+      for (let i = 0; i < flow.length - 1; i++) {
+        const d = route(byId[flow[i]], byId[flow[i + 1]]);
+        segs.push(d);
+        const key = flow[i] + ">" + flow[i + 1];
+        if (!seen.has(key)) {
+          seen.add(key);
+          const p = el("path", { d, class: "edge", pathLength: 1 }, gEdges);
+          if (first && !reduced) {
+            p.style.strokeDasharray = "1"; p.style.strokeDashoffset = "1";
+            p.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 900, delay: 250 + seen.size * 120, easing: "cubic-bezier(.2,.7,.2,1)", fill: "forwards" });
+          }
+        }
+      }
+      if (!reduced) {
+        const path = el("path", { d: segs.join(" "), fill: "none", stroke: "none" }, gPackets);
+        const len = path.getTotalLength();
+        const count = Math.max(2, Math.round(len / 170));
+        for (let i = 0; i < count; i++) packets.push({ path, len, phase: i / count, c: el("circle", { r: 3, class: "packet", opacity: 0 }, gPackets) });
+      }
+    }
+
+    sys.nodes.forEach((nd, i) => {
+      const g = el("g", { class: "node" + (nd.core ? " core" : ""), transform: `translate(${nd.x} ${nd.y})` }, gNodes);
+      el("rect", { width: W, height: H, rx: 3 }, g);
+      el("path", { class: "tick", d: "M0 8 V0 H8 M" + (W - 8) + " " + H + " H" + W + " V" + (H - 8) }, g);
+      const l = el("text", { x: 10, y: 24, class: "l" }, g); l.textContent = nd.l;
+      const s = el("text", { x: 10, y: 41, class: "s" }, g); s.textContent = nd.s;
+      if (first && !reduced) g.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 400, delay: 80 * i, fill: "backwards" });
+    });
+
+    if (!first) svg.classList.add("swap");
+    canvas.appendChild(svg);
+    first = false;
+
+    document.getElementById("sys-title").textContent = sys.title;
+    document.getElementById("sys-caption").textContent = sys.caption;
+    const dl = document.getElementById("sys-stats");
+    dl.textContent = "";
+    for (const [v, label] of sys.stats) {
+      const d = document.createElement("div");
+      const dt = document.createElement("dt"); dt.textContent = v;
+      const dd = document.createElement("dd"); dd.textContent = label;
+      d.append(dt, dd); dl.appendChild(d);
+    }
+    for (const t of tablist.children) {
+      const on = t.dataset.sys === sys.id;
+      t.setAttribute("aria-selected", on);
+      t.tabIndex = on ? 0 : -1;
+    }
+  }
+
+  // Tabs
+  SYSTEMS.forEach(sys => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.type = "button"; b.role = "tab";
+    b.dataset.sys = sys.id; b.textContent = sys.tab;
+    b.setAttribute("aria-controls", "canvas");
+    b.addEventListener("click", () => render(sys));
+    tablist.appendChild(b);
+  });
+  tablist.addEventListener("keydown", e => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    const i = SYSTEMS.indexOf(current);
+    const next = SYSTEMS[(i + (e.key === "ArrowRight" ? 1 : SYSTEMS.length - 1)) % SYSTEMS.length];
+    render(next);
+    tablist.querySelector(`[data-sys="${next.id}"]`).focus();
+    e.preventDefault();
+  });
+
+  function showSystem(id) {
+    const sys = SYSTEMS.find(s => s.id === id);
+    if (!sys) return;
+    render(sys);
+    document.getElementById("systems").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
+  }
+  document.querySelectorAll(".sys-link[data-sys]").forEach(b => b.addEventListener("click", () => showSystem(b.dataset.sys)));
+
+  // Packet loop: runs only while the diagram is on screen.
+  let visible = true, last = 0, t = 0;
+  new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe(canvas);
+  function tick(now) {
+    const dt = Math.min(64, now - (last || now)); last = now;
+    if (visible && !document.hidden) {
+      t += dt;
+      for (const p of packets) {
+        const speed = 70; // px per second
+        const u = ((t / 1000) * speed / p.len + p.phase) % 1;
+        const pt = p.path.getPointAtLength(u * p.len);
+        p.c.setAttribute("cx", pt.x); p.c.setAttribute("cy", pt.y);
+        const edgeFade = Math.min(1, u * 12, (1 - u) * 12);
+        p.c.setAttribute("opacity", edgeFade);
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  render(SYSTEMS[0]);
+  if (!reduced) requestAnimationFrame(tick);
+
+  // Email copy
+  const toast = document.getElementById("toast");
+  async function copyEmail() {
+    try { await navigator.clipboard.writeText(EMAIL); toast.textContent = "Email copied."; }
+    catch { toast.textContent = "Couldn't copy. The address is " + EMAIL + "."; }
+    setTimeout(() => { toast.textContent = ""; }, 3000);
+  }
+  document.getElementById("copy-email").addEventListener("click", copyEmail);
+
+  // Command palette
+  const pal = document.getElementById("palette"), input = document.getElementById("pal-input"), list = document.getElementById("pal-list");
+  const go = id => () => document.getElementById(id).scrollIntoView({ behavior: reduced ? "auto" : "smooth" });
+  const open = url => () => window.open(url, "_blank", "noopener");
+  const COMMANDS = [
+    { label: "Work", hint: "Section", run: go("work") },
+    { label: "Side projects", hint: "Section", run: go("lab") },
+    { label: "Contact", hint: "Section", run: go("contact") },
+    ...SYSTEMS.map(s => ({ label: s.title, hint: "Diagram", keys: s.keys, run: () => showSystem(s.id) })),
+    { label: "Copy email address", hint: EMAIL, run: () => { go("contact")(); copyEmail(); } },
+    { label: "GitHub", hint: "github.com/ansoncht", run: open("https://github.com/ansoncht") },
+    { label: "LinkedIn", hint: "linkedin.com/in/anson-chung", run: open("https://www.linkedin.com/in/anson-chung/") }
+  ];
+  let matches = [], sel = 0;
+
+  function draw() {
+    const q = input.value.trim().toLowerCase();
+    matches = COMMANDS.filter(c => [c.label, c.hint, c.keys || ""].join(" ").toLowerCase().includes(q));
+    sel = Math.min(sel, Math.max(0, matches.length - 1));
+    list.textContent = "";
+    if (!matches.length) {
+      const li = document.createElement("li"); li.className = "empty";
+      li.textContent = "Nothing matches. Try \"work\", \"Kafka\" or \"email\".";
+      list.appendChild(li); return;
+    }
+    matches.forEach((c, i) => {
+      const li = document.createElement("li");
+      li.role = "option"; li.id = "opt-" + i;
+      li.setAttribute("aria-selected", i === sel);
+      li.textContent = c.label;
+      const h = document.createElement("span"); h.textContent = c.hint; li.appendChild(h);
+      li.addEventListener("mousemove", () => { if (sel !== i) { sel = i; draw(); } });
+      li.addEventListener("click", () => run(i));
+      list.appendChild(li);
+    });
+    input.setAttribute("aria-activedescendant", "opt-" + sel);
+    list.children[sel]?.scrollIntoView({ block: "nearest" });
+  }
+  function run(i) { const c = matches[i]; if (!c) return; pal.close(); c.run(); }
+  function openPalette() { input.value = ""; sel = 0; draw(); pal.showModal(); input.focus(); }
+
+  document.getElementById("open-palette").addEventListener("click", openPalette);
+  if (!/Mac|iPhone|iPad/.test(navigator.platform)) document.getElementById("kbd-hint").textContent = "Ctrl K";
+  addEventListener("keydown", e => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); pal.open ? pal.close() : openPalette(); }
+  });
+  input.addEventListener("input", () => { sel = 0; draw(); });
+  input.addEventListener("keydown", e => {
+    if (e.key === "ArrowDown") { sel = (sel + 1) % Math.max(1, matches.length); draw(); e.preventDefault(); }
+    else if (e.key === "ArrowUp") { sel = (sel - 1 + matches.length) % Math.max(1, matches.length); draw(); e.preventDefault(); }
+    else if (e.key === "Enter") { run(sel); e.preventDefault(); }
+  });
+  pal.addEventListener("click", e => { if (e.target === pal) pal.close(); });
+})();
+</script>
+</body>
+</html>
