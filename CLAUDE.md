@@ -174,9 +174,6 @@ git -C ~/Documents/ansoncht.github.io commit -m "short description"
 git -C ~/Documents/ansoncht.github.io push
 ```
 
-After editing, also sync the local working copy at:
-`~/Documents/interview/stripe/tohoku-travel-v3.html`
-
 ---
 
 ## Tone & Content Guidelines
